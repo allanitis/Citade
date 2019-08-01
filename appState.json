@@ -1,0 +1,238 @@
+{
+  "EDITOR_STATE": {
+    "allProjectFiles": {
+      "8b8df3ea-2c46-47d9-8bba-23b387265df6": {
+        "id": "8b8df3ea-2c46-47d9-8bba-23b387265df6",
+        "parent": null,
+        "name": "Citade",
+        "type": "DIRECTORY",
+        "isDirectory": true,
+        "children": [
+          "d874f140-dc26-4379-a700-383b5737fd0a",
+          "04b03082-e6fd-4345-b486-31ae79ad0c89",
+          "a2b86ee5-e834-441c-bf76-a854ffd67af8",
+          "f67935b9-2289-45df-aaa7-7a31df4c7294",
+          "33ebb7ee-5f22-4798-ab88-f329a8c5c331"
+        ],
+        "isRemovable": false,
+        "filePath": "Citade"
+      },
+      "d874f140-dc26-4379-a700-383b5737fd0a": {
+        "id": "d874f140-dc26-4379-a700-383b5737fd0a",
+        "parent": "8b8df3ea-2c46-47d9-8bba-23b387265df6",
+        "name": "lambda.js",
+        "type": "JS_LAMBDA",
+        "isDirectory": false,
+        "children": [],
+        "isRemovable": true,
+        "filePath": "Citade/lambda.js",
+        "code": "let Swagger = require('swagger-client');\n\nexports.handler = function (event, context, callback) {\n\n    callback(null, { \"message\": \"Successfully executed\" });\n    Swagger.http({\n        url: `https://devapi.currencycloud.com/v2/ibans/find`,\n        method: 'get',\n        query: { \"scope\": \"all\" },\n        headers: { \"X-Auth-Token\": \"srtien\", \"Accept\": \"application/json\" }\n    }).then((response) => {\n        Swagger.http({\n            Swagger.http({\n                    url: `https://devapi.currencycloud.com/v2/authenticate/api`,\n                    method: 'post',\n                    query: {},\n                    headers: {\"Accept\":\"application/json\",\"Content-Type\":\"application/x-www-form-urlencoded\"},\n                    body: `login_id=ien&api_key=ienien`\n                }).then((response) => {\n                    // your code goes here\n                }).catch((err) => {\n                    // error handling goes here\n                });\n            url: `https://api.sandbox.transferwise.tech/quotes`,\n            method: 'post',\n            query: {},\n            headers: { \"Accept\": \"application/json\", \"Content-Type\": \"application/json\" },\n            body: JSON.stringify(response)\n        }).then((response) => {\n            // your code goes here\n        }).catch((err) => {\n            // error handling goes here\n        });\n        // your code goes here\n    }).catch((err) => {\n        // error handling goes here\n    });\n}",
+        "config": {
+          "runtime": "nodejs8.10",
+          "handler": "handler",
+          "timeout": 60,
+          "memory": 128,
+          "layers": []
+        },
+        "triggers": [
+          {
+            "resourceName": "apigeuWest1theTestGatewayapiDetailsget",
+            "config": {}
+          }
+        ]
+      },
+      "04b03082-e6fd-4345-b486-31ae79ad0c89": {
+        "id": "04b03082-e6fd-4345-b486-31ae79ad0c89",
+        "parent": "8b8df3ea-2c46-47d9-8bba-23b387265df6",
+        "name": "myPythonFile.py",
+        "type": "PYTHON_LAMBDA",
+        "isDirectory": false,
+        "children": [],
+        "isRemovable": true,
+        "filePath": "Citade/myPythonFile.py",
+        "code": "def handler(event, context):\n    \n    return {\"message\": \"Successfully executed\"}\n",
+        "config": {
+          "runtime": "python3.6",
+          "handler": "handler",
+          "timeout": 60,
+          "memory": 128,
+          "layers": []
+        },
+        "triggers": []
+      },
+      "a2b86ee5-e834-441c-bf76-a854ffd67af8": {
+        "id": "a2b86ee5-e834-441c-bf76-a854ffd67af8",
+        "parent": "8b8df3ea-2c46-47d9-8bba-23b387265df6",
+        "name": "__init__.py",
+        "type": "PYTHON_FILE",
+        "isDirectory": false,
+        "children": [],
+        "isRemovable": true,
+        "filePath": "Citade/__init__.py",
+        "code": ""
+      },
+      "f67935b9-2289-45df-aaa7-7a31df4c7294": {
+        "id": "f67935b9-2289-45df-aaa7-7a31df4c7294",
+        "parent": "8b8df3ea-2c46-47d9-8bba-23b387265df6",
+        "name": "discrepancy_matching.py",
+        "type": "PYTHON_LAMBDA",
+        "isDirectory": false,
+        "children": [],
+        "isRemovable": true,
+        "filePath": "Citade/discrepancy_matching.py",
+        "code": "import mysql\nimport pandas as pd\nfrom botocore.vendored import requests\nfrom Notifications import BankNotification, HouseNotification, CompanyNotification\nfrom Connectors import Fernergo, ArtemisNICE, LexisNexis, Infinity, Aracnis, WebKYC, KYCPortal\nfrom Golden import standarise, render_citadel\n\ndef citadel(event, context):\n    s3 = boto3.resource('s3')\n    # Injest banking data \n    related_parties = pd.read_csv(s3.get('fca-techsprint-citadel-data', 'banking-data/customer_related_parties/customer_related_parties.csv'))\n    six_banks = related_parties.groupby('bank_name')\n\n    # Injest, standarised and combine Companies House data\n    company_house = pd.read_csv(s3.get('fca-techsprint-citadel-data', 'uk-company-register/psc_register/psc_register.csv'))\n    golden_data = Golden.standardise(company_house)\n\n    # For each bank, encrypt then send to main dataset\n    for bank in six_banks:\n        golden_data = enrich_golden_data(bank, company_house)    \n    try:\n        res = requests.post(\n            \"http://bx8ocdir2g.execute-api.eu-west-1.amazonaws.com/prod/encrypt\",\n            params={},\n            headers={\"Accept\":\"\",\"Content-Type\":\"applications/json\"},\n            data=customers\n        )\n        privatised_ubos = res['client']\n\n        # Send privatised bank data to Citadel\n        res = requests.post(\n            \"http://bx8ocdir2g.execute-api.eu-west-1.amazonaws.com/prod/fyn\",\n            params={},\n            headers={\"Accept\":\"\",\"Content-Type\":\"applications/json\"},\n            data=privatised_ubos\n        )\n        \n        # Citadel will check for discrepancies between new bank and CH\n        golden_data = requests.post(\n            \"http://bx8ocdir2g.execute-api.eu-west-1.amazonaws.com/prod/banking/new\",\n            params={},\n            headers={\"Accept\":\"\",\"Content-Type\":\"applications/json\"},\n            data={'new': privatised_ubos, 'existing': citadel_data}\n        )\n    except BaseException as e:\n        raise(e)\n    \n    # Alert of Discrepancies\n    BankNotification.send(Citadel.send_discrepancies['banks'])\n    HouseNotification.send(Citadel.send_discrepancies['house'])\n    CompanyNotification.send(Citadel.send_discrepancies['company'])\n\n    # Send Discrepancies to Citadel Dashboard\n    Citadel.render_citadel(discrepancies)",
+        "config": {
+          "runtime": "python2.7",
+          "handler": "handler",
+          "timeout": 60,
+          "memory": 128,
+          "layers": []
+        },
+        "triggers": [
+          {
+            "resourceName": "apigeuWest1newClientConnectionclientaddpost",
+            "config": {}
+          }
+        ],
+        "testCases": {
+          "b5a4aa83-df8f-4e19-b6ba-22585819ad5d": {
+            "id": "b5a4aa83-df8f-4e19-b6ba-22585819ad5d",
+            "name": "myTestEvent",
+            "functionId": "f67935b9-2289-45df-aaa7-7a31df4c7294",
+            "event": "{\n    \"key1\": \"value1\",\n    \"key2\": \"value2\",\n    \"key3\": \"value3\"\n}"
+          }
+        }
+      },
+      "33ebb7ee-5f22-4798-ab88-f329a8c5c331": {
+        "id": "33ebb7ee-5f22-4798-ab88-f329a8c5c331",
+        "parent": "8b8df3ea-2c46-47d9-8bba-23b387265df6",
+        "name": "myTestPython.py",
+        "type": "PYTHON_LAMBDA",
+        "isDirectory": false,
+        "children": [],
+        "isRemovable": true,
+        "filePath": "Citade/myTestPython.py",
+        "code": "from botocore.vendored import requests\n\ndef handler(event, context):\n    \n    return {\"message\": \"Successfully executed\"}\n    try:\n        res = requests.post(\n            \"http://bx8ocdir2g.execute-api.eu-west-1.amazonaws.com/prod/fyn\",\n            params={},\n            headers={\"Accept\":\"\",\"Content-Type\":\"applications/json\"},\n            data=''\n        )\n        # your code goes here\n    except BaseException as e:\n        # error handling goes here\n        raise(e)\n",
+        "config": {
+          "runtime": "python2.7",
+          "handler": "handler",
+          "timeout": 60,
+          "memory": 128,
+          "layers": []
+        },
+        "triggers": []
+      }
+    },
+    "deletedFiles": [],
+    "rootNode": "8b8df3ea-2c46-47d9-8bba-23b387265df6",
+    "openFiles": [
+      "f67935b9-2289-45df-aaa7-7a31df4c7294"
+    ],
+    "currentFileId": "f67935b9-2289-45df-aaa7-7a31df4c7294",
+    "resources": {
+      "apigeuWest1theTestGatewayapiDetailsget": {
+        "name": "apigeuWest1theTestGatewayapiDetailsget",
+        "type": "API_GATEWAY",
+        "config": {
+          "selectedRegion": "eu-west-1",
+          "apiMode": 0,
+          "apiName": "theTestGateway",
+          "endpointType": "EDGE",
+          "resourceMode": 0,
+          "resourceName": "api-details",
+          "resourcePath": "/api-details",
+          "restMethod": "GET",
+          "proxyIntegration": false,
+          "enableCORS": false,
+          "stageMode": 0,
+          "stageName": "Prod",
+          "mode": 0
+        }
+      },
+      "apigeuWest1newClientConnectionclientaddpost": {
+        "name": "apigeuWest1newClientConnectionclientaddpost",
+        "type": "API_GATEWAY",
+        "config": {
+          "selectedRegion": "eu-west-1",
+          "apiMode": 0,
+          "apiName": "newClientConnection",
+          "endpointType": "EDGE",
+          "resourceMode": 0,
+          "resourceName": "client/add",
+          "resourcePath": "/client/add",
+          "restMethod": "POST",
+          "proxyIntegration": false,
+          "enableCORS": false,
+          "stageMode": 0,
+          "stageName": "Prod",
+          "mode": 0
+        }
+      }
+    },
+    "customTemplate": {
+      "dialect": null,
+      "definitions": {}
+    },
+    "envVariables": [
+      {
+        "lambdaId": "all",
+        "varKey": "SIGMA_AWS_ACC_ID",
+        "varValue": null,
+        "shouldPersist": false,
+        "displayOnly": false,
+        "editable": false
+      },
+      {
+        "lambdaId": "04b03082-e6fd-4345-b486-31ae79ad0c89",
+        "varKey": "PYTHONPATH",
+        "varValue": "/var/runtime:/var/task/Citade",
+        "shouldPersist": true,
+        "displayOnly": false,
+        "editable": true
+      },
+      {
+        "lambdaId": "f67935b9-2289-45df-aaa7-7a31df4c7294",
+        "varKey": "PYTHONPATH",
+        "varValue": "/var/runtime:/var/task/Citade",
+        "shouldPersist": true,
+        "displayOnly": false,
+        "editable": true
+      },
+      {
+        "lambdaId": "33ebb7ee-5f22-4798-ab88-f329a8c5c331",
+        "varKey": "PYTHONPATH",
+        "varValue": "/var/runtime:/var/task/Citade",
+        "shouldPersist": true,
+        "displayOnly": false,
+        "editable": true
+      }
+    ],
+    "packageJSON": {
+      "dependencies": {
+        "swagger-client": {
+          "name": "swagger-client",
+          "language": "javascript",
+          "version": "3.8.21",
+          "dev": false,
+          "notRemovable": false
+        }
+      }
+    }
+  },
+  "PROJECT_META": {
+    "projectName": "Citade",
+    "projectDescription": "",
+    "projectVersion": "1.0.0",
+    "projectRegion": "eu-west-1",
+    "platform": "AWS",
+    "platformRegions": {},
+    "lastSave": 1564691546044
+  },
+  "VCS_STATE": {
+    "provider": "GitHub",
+    "repo": {
+      "name": "Citade",
+      "url": "https://github.com/allanitis/Citade"
+    }
+  }
+}
